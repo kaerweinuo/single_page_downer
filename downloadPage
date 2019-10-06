@@ -26,19 +26,21 @@ class DownloadPage():
             return adict[match.group(0)]
         return rx.sub(one_xlat, text)
 
+
     def download_image(self,filepath,iter_content):
         try:
             with open(filepath, 'wb') as f:
-                for chunk in iter_content(chunk_size=1024):  
-                    if chunk:  
+                for chunk in iter_content(chunk_size=1024):  # 历遍请求下载回来的图片
+                    if chunk:  # 如果chunk不等于0
                         f.write(chunk)
-                        f.flush()  
+                        f.flush()  # 刷新缓冲区
                 f.close()
         finally:
             pass
         pass
-    
-    
+
+    #处理
+    #content
     def dealList(self, lists, contentType, url, cate, target):
         for c in lists:
             #计算绝对路径
@@ -50,9 +52,10 @@ class DownloadPage():
                 req = requests.get(realfilepath, stream=True)
             req.encoding = self.encoding
             if(req.status_code==200):
-                filenameList = realfilepath.split('/')
-                filename = filenameList[len(filenameList) - 1].split('?')[0] #去除?v=213等内容
-                self.replaces[c.get(target)] = "static/" + contentType + "/" + filename
+                filenameDict = parse.urlparse(realfilepath)
+                filename = str(filenameDict[2]).replace("/","")
+                if c.get(target) != None:
+                    self.replaces[c.get(target)] = "static/" + contentType + "/" + filename
                 if(filename):
                     if(contentType!="img"):
                         self.download_htmlcssjs(cate + "/static/" + contentType + "/" + filename, req.text)
@@ -60,7 +63,7 @@ class DownloadPage():
                         self.download_image(cate + "/static/" + contentType + "/" + filename,req.iter_content)
 
 
-    
+    #下载整个网页
     def __init__(self,url,cate):
         request = requests.get(url)
         request.encoding = request.apparent_encoding
@@ -81,13 +84,10 @@ class DownloadPage():
         self.dealList(imgs, "img", url, cate, "src")
 
         print(self.replaces)
-        fo = open(cate + "/index.html", "w", encoding=self.encoding)
-        if (len(self.replaces) > 1):
-            fo.write(self.multiple_replace(content, self.replaces))
-        else:
-            fo.write(self.multiple_replace(content, self.replaces))
-        fo.close()
-
-
-
-#d=DownloadPage("http://www.xxx.com","web3")
+        try:
+            fo = open(cate+"/index.html", "w", encoding=self.encoding)
+            fo.write(self.multiple_replace(content, self.replaces) )
+            fo.close()
+        finally:
+            pass
+        pass
