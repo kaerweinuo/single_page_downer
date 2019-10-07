@@ -5,8 +5,31 @@ import os
 from bs4 import BeautifulSoup
 from urllib import parse
 import re
+from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineView
 
-class DownloadPage():
+class Complex(QWebEngineView):
+    def __init__(self, url):
+        from PyQt5.QtWidgets import QApplication
+        import sys
+        from PyQt5.QtCore import QUrl
+        import lxml.html
+
+        self.html = ''
+        self.app = QApplication(sys.argv)
+        QWebEngineView.__init__(self)
+        self.loadFinished.connect(self._loadFinished)
+        self.load(QUrl(url))
+        self.app.exec_()
+
+    def _loadFinished(self):
+        self.page().toHtml(self.callable)
+
+    def callable(self, data):
+        self.html = data
+        self.app.quit()
+
+
+class Download():
 
     replaces = {}
 
@@ -64,11 +87,19 @@ class DownloadPage():
 
 
     #下载整个网页
-    def __init__(self,url,cate):
-        request = requests.get(url)
-        request.encoding = request.apparent_encoding
-        self.encoding = request.apparent_encoding
-        content = request.text
+    def __init__(self, url, cate, model="simple"):
+        if(model=="complex"):
+            r = Complex(url)
+            content = r.html
+            # 偷个懒，用requests抓取到的编码做ajax加载页面的编码
+            request = requests.get(url)
+            self.encoding = request.apparent_encoding
+        else:
+            request = requests.get(url)
+            request.encoding = request.apparent_encoding
+            self.encoding = request.apparent_encoding
+            content = request.text
+
 
         paths = ['img','css','js']
         for p in paths:
